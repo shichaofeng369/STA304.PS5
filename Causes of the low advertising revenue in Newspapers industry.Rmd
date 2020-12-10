@@ -1,0 +1,45 @@
+---
+title: "Causes of the low advertising revenue in Newspapers industry"
+author: "***"
+date: '2020-12-08'
+abstract: 'This paper study the cause of low advertising revenue in Newspaper industry after 1960s. Based on the French dataset, this paper uses difference in differnce method to study the effect of TV advertising on local and national newspaper. The results shows that the influence on national newspaper are more significant than local newspaper.'
+
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+keywords: newspaper industry, Difference in difference, newspaper quality, advertising
+
+# Introduction
+
+Compared with the past, fewer people choose to subscribe to newspapers. The circulation and popularity of newspapers are far lower than Internet and TV nowadays. However, in the 1960s and 1970s, newspapers were in people's daily lives. The decline of the newspaper industry is inevitable. Studying the causes of its occurrence can help the newspaper industry reposition and seek development opportunities.
+
+This article reproduces Charles Angelucci's "Newspapers in Times of Low Advertising Revenues" research method. Based on the data of French newspaper industry from 1960 to 1974, this paper studies the influence of TV advertising on local and national newspaper industry. By comparing the trends of local and national newspapers, this paper explore the reasons for the decline in the newspaper industry. 
+
+This paper includes the following sections. Data descreption will be given in the first paragraph. Then, the adopted difference model will be introduced in section 2. Results are presented in section 3. Based on the results, discussion and weekness will be in seciton 4.
+
+
+
+## Data
+
+
+## Model
+
+
+## Results
+
+
+
+## Discussion
+
+
+## Weaknesses
+
+
+## References
+
+
+
