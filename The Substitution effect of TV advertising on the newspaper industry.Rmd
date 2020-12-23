@@ -1,0 +1,289 @@
+---
+title: "The Substitution effect of TV advertising on the newspaper industry"
+author: "Shchao Feng, 1004883904"
+date: '2020-12-08'
+abstract: 'This article studies the substitution effect of TV advertisements on newspapers from the advertising side and reader side. By learning French newspaper data from 1960 to 1974, the difference in differnce method is used to study the impact of television advertisements on the newspaper industry after 1967. The results show that the substitution effect is mainly reflected in national newspapers, which will reduce newspaper advertising revenue, and advertising companies will reduce subscription prices to cope with the impact of TV advertising. The substitution effect has little effect on revenue from sales.'
+
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(haven)
+```
+
+**keywords**: newspaper industry, Difference in difference, Substitution effect , advertising
+
+**Link** : 
+
+
+# Introduction
+
+Compared with the past, fewer people choose to subscribe to newspapers. The circulation and popularity of newspapers are far lower than Internet and TV nowadays. However, in the 1960s and 1970s, newspapers were in people's daily lives. The decline of the newspaper industry is inevitable. Studying the causes of its occurrence can help the newspaper industry reposition and seek development opportunities.
+
+This article reproduces Charles Angelucci's "Newspapers in Times of Low Advertising Revenues" research method. Based on the French newspaper industry data from 1960 to 1974, this paper studies the influence of TV advertising on local and national newspaper industry. By comparing the trends of local and national newspapers, this paper explore the reasons for the decline in the newspaper industry. 
+
+This paper includes the following sections. Data descreption will be given in the first paragraph. Then, the adopted difference model will be introduced in section 2. Results are presented in section 3. Based on the results, discussion and weekness will be in seciton 4.
+
+
+# Data
+
+This article collects French local and national panel datasets from 1960 to 1974. It includes all ten national newspapers and 61 local newspapers. The collection rate of local newspapers accounts for 87% of the French local newspapers. TV advertising's substitution effect is obtained through the research on newspaper industry income, circulation, and reader subscriptions.
+Price, cost and revenue are essential indicators for studying the development trend of the industry. For the above 71 newspapers, we collected the unit price, subscription price,  circulation, revenues from sales and revenues from advertising per year from 1960 to 1974. By comparing revenue and cost, we found that profit is meagre in the newspaper industry.
+The price change and the quantity change of newspaper advertisements were collected in the dataset. The variables include the number of newspaper pages, the space occupied by advertisements, and advertising costs. The data summary is shown in Table 1. The original dataset has 1196 observations and  52 variables.  After data cleaning, we only keep  924 observations and 15 variables. We also create some variables such as price ratio from existing variables.
+From Table 1, the unit price is higher than the subscription price. The return of the newspaper industry is relatively low. The average cost is 190 million, but the profit is only 5.2 million. The average length of a newspaper is 16 pages, and the advertisements occupy an average of 3.5 pages, nearly 20% of the newspaper. Besides, we also found that the results after data cleaning are somewhat different from the Charles Angelucci table data. The main reason is that the data cleaning method is different. Charles Angelucci finally uses 1008 observations.
+
+
+```{r,echo = FALSE}
+newspapers_raw <- read_dta("Angelucci_Cage_AEJMicro_dataset.dta")
+newspapers <- newspapers_raw %>% 
+  dplyr::select(year, after_national, local, national,id_news, # Diff in diff variables
+         po_cst,ps_cst, # price
+         ra_cst,ra_s,rs_cst,rtotal_cst,etotal_cst,profit_cst, #revenues and cost
+         qtotal,qs_s,ln_ads_q, # circulation
+         pages,ads_q,ads_s)# content
+newspapers = na.omit(newspapers)
+
+newspapers <- newspapers %>% mutate(price_ratio = ps_cst/po_cst,post = year > 1967) %>%
+   mutate_at(vars(id_news, after_national, local, national), ~as.factor(.)) %>%
+   mutate(year = as.integer(year))
+newspapers <- newspapers %>% mutate(d1 = year >= 1966 & year <= 1968,
+                                    d2 = year >= 1969 & year <= 1971,
+                                    d3 = year > 1971)
+
+#newspapers %>% 
+#summarize(avg=mean(ads_s),  sd=sd(ads_s))
+
+```
+
+
+
+
+**Table 1: Summary statistics**
+
+|                                                                          | mean/sd|
+|----------------------------------------------------------------------------------|-----------------|
+| **Price**                                                                        |                 |
+| Unit Price                                                                     | 3.23/0.76             |
+| Subscription Price Per Issue                                                   | 2.78/0.68            |
+| Price Ratio                                                                        | 0.86/0.07            |
+| **Revenues and Costs**                                               |                 |
+| Total Revenues (in million euros)                                                       | 196/256           |
+| Revenues from Advertising (in million euros)                                             | 94/143            |
+| Revenues from Sales  (in million euros)                                                  | 102/128            |
+| Share of Advertising in Total Revenues (%)                                                        | 45.7/10.8            |
+| Total Expenditure   (in million euros)                                                    | 190/259            |
+| Profit                                                                             | 5.2/55.5            |
+| **Circulation**                                                                        |                 |
+| Total Circulation                                                                         | 136468/176067            |
+| Share Subscribers (%)                                                                       | 26.7/22.5            |
+| **Content**                                                                              |                 |
+| Total Number of Pages per Issue                                                                           | 16/7           |
+| Quantity of Advertising per issue (in number of pages)                                                    | 3.5/3.6            |
+| Sharing of Advertising in Newspaper Content (%)                                                     | 19/10            |
+|----------------------------------------------------------------------------------|-----------------|
+| Observations                                                                    | 924             |
+
+
+```{r, echo  = FALSE, fig.cap = "Descriptive Evidence: changes in price Discrimination"}
+localnewspaper = newspapers %>% filter(national == 0) %>% group_by(year) %>% summarise(avg_price = mean(price_ratio,na.rm = TRUE), .groups = 'drop')
+nationalnewspaper = newspapers %>% filter(national == 1) %>% group_by(year) %>% summarise(avg_price = mean(price_ratio,na.rm = TRUE),.groups = 'drop')
+
+ts_l_priceraio <- ts(localnewspaper$avg_price, start = 1960)
+ts_n_priceraio <- ts(nationalnewspaper$avg_price, start = 1960)
+ts.plot(ts_l_priceraio,ts_n_priceraio,col = c(1,2))
+abline(v = 1967)
+```
+
+
+
+
+# Model
+
+Before TV advertising was allowed, local newspapers and national newspapers had a similar growth trend because they had no alternative influence. However, after the liberalization of television advertising restrictions in 1967, national newspapers' impact was even more significant. Therefore, we use the Difference in Difference method to study the substitution effect of TV advertising.
+Substitution effect on price ratio.
+The ratio of the subscription price to the unit buy price reflects the newspaper industry's response to the substitution effect of TV advertising. To get the precise substitution effect, we added the related fixed effect variable in the difference models. The fixed effects includes newspaper specific effects and general time trends effect. 
+
+**Model 1: Simple Difference model**
+
+$$log y_{n,t} = \alpha + \beta_1 * D_{after} + \beta_2 D_{national news} + \beta_3 (D_{after}* D_{national news}) + \epsilon_{n,t}$$
+**Model 2: Difference in difference model with newspaper fixed effect **
+$$log y_{n,t} = \alpha + \beta_1 * D_{after} + \beta_2 D_{national news} + \beta_3 (D_{after}* D_{national news}) + \lambda_n + \epsilon_{n,t}$$
+
+**Model 3: Difference in difference model with newspaper fixed effect and time trend fixed effect **
+$$log y_{n,t} = \alpha + \beta_1 * D_{after} + \beta_2 D_{national news} + \beta_3 (D_{after}* D_{national news}) + \lambda_n + \gamma_t +  \epsilon_{n,t}$$
+
+**Model 4: Difference in difference model with newspaper fixed effect and time trend fixed effect, with news control **
+$$log y_{n,t} = \alpha + \beta_1 * D_{after} + \beta_2 D_{national news} + \beta_3 (D_{after}* D_{national news}) + X'_{n,t}\delta + \lambda_n + \gamma_t +  \epsilon_{n,t}$$
+
+The $log y_{n,t}$ is the outcomes of interest, including price ratio, unit price, Subscription Price, cost, profit, etc.
+
+$D_{after}$ is the dummy variable to indicate the year before and after 1967;
+
+$D_{national news}$ is the dummy variable to indicate the national newspaper, which is also the treatment group;
+
+$\lambda_n$ is the newspaper fixed effet;
+
+$\gamma_t$ is the time fixed effet;
+
+$X'_{n,t}$ are some newspaper level control variables, such as circulation and costs. 
+
+
+Figure 1 gives the time trend of price ratio in both local and national newspaper. It shows that, the assumption for differnece in difference method is satisfied here, and thus we can do the further analysis. 
+
+
+# Results
+
+**Price ratio model**
+
+The parameters obtained by the four models are all around -0.08 in table 2. The result shows that the TV advertising job will reduce the price ratio, making the subscription to the newspaper more favourable. When the fixed effect is added, the price ratio of TV advertising to newspapers is not significantly changed, but R square has been dramatically increased.
+
+
+
+**Advertising side model**
+
+Afterwards, the advertising side effects were estimated in Table 3. The results showed that TV commercials had a significant negative substitution effect on advertising revenue, circulation, and total revenue, while newspapers' advertising space did not change significantly. The difference in difference model has high explanatory power for revenue and circulation.
+
+
+
+**Reader side model**
+In the reader side model, as shown in Table 4, the subscription price parameter is -0.07, but it has no significant effect on the unit price. This phenomenon also explains why the share of subscribers will increase significantly. The share of subscriber parameter is 0.17, which has a significant change. In addition, TV advertising has no significant impact on the revenue of sales.
+
+
+**Table 2 Price ratio model results**
+
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\begin{tabular}{l*{4}{c}}
+\hline\hline
+                    &\multicolumn{1}{c}{Model 1}&\multicolumn{1}{c}{Model 2}&\multicolumn{1}{c}{Model 3)}&\multicolumn{1}{c}{model 4}\\
+\hline
+National x Post-TV Ad&       -0.08\sym{***} &       -0.08\sym{***}  &       -0.09\sym{***}&       -0.08\sym{***}         \\
+                    &      (0.02)         &      (0.01)         &      (0.01)         &      (0.01)         \\
+\hline
+Newspaper FE        &         No         &         Yes         &         Yes         &         Yes         \\
+Year FE             &         No         &         No         &         Yes         &         Yes         \\
+News control        &         No         &         No         &         no         &         Yes         \\
+R-sq                &        0.13         &        0.59         &        0.59         &        0.59         \\
+Observations        &       924         &       924         &         924         &       924        \\
+\hline\hline
+\end{tabular}
+
+
+
+
+```{r,echo  = FALSE}
+l_price_ratio0 <- lm(log(price_ratio) ~ national + post +  after_national , data = newspapers)
+l_price_ratio1 <- lm(log(price_ratio) ~ national + post +  after_national + id_news , data = newspapers)
+l_price_ratio2 <- lm(log(price_ratio) ~ national + post +  after_national + year + id_news, data = newspapers)
+l_price_ratio3 <- lm(log(price_ratio) ~national + post +  after_national + year + qtotal + etotal_cst + id_news, data = newspapers)
+#summary(l_price_ratio0)
+#summary(l_price_ratio1)
+#summary(l_price_ratio2)
+#summary(l_price_ratio3)
+
+```
+
+
+
+
+
+
+
+
+
+```{r,echo  = FALSE}
+#         ra_cst,ra_s,rs_cst,rtotal_cst,etotal_cst,profit_cst, #revenues and cost
+l_ra_cst <- lm(log(ra_cst) ~ national + post +  after_national + year + id_news, data = newspapers)
+#summary(l_ra_cst)
+
+l_qtotal <- lm(log(qtotal) ~ national + post +  after_national + year + id_news, data = newspapers)
+#summary(l_qtotal)
+
+l_rtotal_cst <- lm(log(rtotal_cst) ~ national + post +  after_national + year + id_news, data = newspapers)
+#summary(l_rtotal_cst)
+l_ads_s <- lm(log(ads_s) ~ national + post +  after_national + year + id_news, data = newspapers)
+# summary(l_ads_s)
+
+
+```
+
+
+**Table 3 Advertising side results**
+
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\begin{tabular}{l*{4}{c}}
+\hline\hline
+                    &\multicolumn{1}{c}{AD revenue}&\multicolumn{1}{c}{Ciculation}&\multicolumn{1}{c}{total Revenue)}&\multicolumn{1}{c}{AD space}\\
+\hline
+National x Post-TV Ad&       -0.2\sym{***} &       -0.03  &       -0.1\sym{***}&       -0.02         \\
+                    &      (0.03)         &      (0.02)         &      (0.02)         &      (0.05)         \\
+\hline
+Newspaper FE        &         Yes         &         Yes         &         Yes         &         Yes         \\
+Year FE             &         Yes         &         Yes         &         Yes         &         Yes         \\
+R-sq                &        0.98         &        0.99         &        0.99         &        0.73         \\
+Observations        &       924         &       924         &         924         &       924        \\
+\hline\hline
+\end{tabular}
+
+
+
+
+```{r,echo  = FALSE}
+ #        po_cst,ps_cst, # price
+l_po_cst <- lm(log(po_cst) ~ national + post +  after_national + year + id_news, data = newspapers)
+#summary(l_po_cst)
+
+l_ps_cst <- lm(log(ps_cst) ~ national + post +  after_national + year + id_news, data = newspapers)
+#summary(l_ps_cst)
+
+l_qs_s <- lm(log(qs_s) ~ national + post +  after_national + year + id_news, data = newspapers)
+#summary(l_qs_s)
+l_rs_cst <- lm(log(rs_cst) ~ national + post +  after_national + year + id_news, data = newspapers)
+#summary(l_rs_cst)
+
+```
+
+**Table 4 Reader side results**
+
+
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\begin{tabular}{l*{4}{c}}
+\hline\hline
+                    &\multicolumn{1}{c}{Subscription price}&\multicolumn{1}{c}{Unit price}&\multicolumn{1}{c}{share of Subscribers)}&\multicolumn{1}{c}{Revenue from sale}\\
+\hline
+National x Post-TV Ad&       -0.07\sym{***} &       0.01  &       0.17\sym{***}&       -0.04         \\
+                    &      (0.02)         &      (0.02)         &      (0.04)         &      (0.03)         \\
+\hline
+Newspaper FE        &         Yes         &         Yes         &         Yes         &         Yes         \\
+Year FE             &         Yes         &         Yes         &         Yes         &         Yes         \\
+R-sq                &        0.88         &        0.88         &        0.97        &        0.98         \\
+Observations        &       924         &       924         &         924         &       924        \\
+\hline\hline
+\end{tabular}
+
+
+## Discussion
+
+This paper uses the difference in difference method to study the impact of TV advertising on newspapers. The results show that TV advertising has a substitution effect on newspaper advertising. The newspaper advertising revenue has seen a significant decline, but it has little impact on the revenue of newspaper sales. 
+
+Since the circulation and unit price prices are not changing significantly, the reader side's impact is only the increase in the proportion of newspaper subscriptions. The decrease can explain the rise in subscription ratio in price ratio and subscription price. Because the newspaper company increased price discrimination, people get preferential prices by subscribing to newspapers. This can be seen as the newspaper industry’s response to the impact of TV advertising. As shown in Figure 1, the red line represents the change in the national newspaper price ratio. After the TV advertising open, the price ratio dropped significantly in the national newspaper, but the result was not apparent for the local newspaper. This also shows that TV advertising only affects the national newspaper market and has little effect on the local market.
+The reason is that local newspapers' advertising revenue mainly comes from local companies, and local companies primarily serve local people. Therefore, there is no need to do TV advertising.  National newspaper advertisements and TV advertisements are both facing the whole country, in a similar function. Thus, there is a substitute relationship between the two.
+
+Similar problems exist now, such as the substitution relationship between online shopping and physical shopping. Physical stores often adopt a membership system to retain customers and give them appropriate discounts. Due to COVID19, the impact of physical stores is more significant, so the replacement effect of online shopping will be more obvious.
+
+## Weekness
+
+Although this article reproduces most of the article's conclusions, the deviations are mainly reflected in the processing of missing data. In this paper, the observations with missing data in all collected variables are deleted, resulting in a sample size that is nearly 100 data less than the original article. Since the article does not mention how to clean data, all the deviations caused are reasonable.
+
+
+
+## References
+
+Charles Angelucci, Julia Cage. Newspapers in Times of Low Advertising Revenues. 2015. <hal-01173957>
+
+Rohan, A. (2020, November 05). Difference in differences. Retrieved December 20, 2020, from https://www.tellingstorieswithdata.com/06-03-matching_and_differences.html
+
+
+
+
